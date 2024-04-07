@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "258094600179",
+    "project_id": "grocery-list-911c5",
+    "storage_bucket": "grocery-list-911c5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:258094600179:android:34b9c03e1f30e710118c86",
+        "android_client_info": {
+          "package_name": "com.example.hive_grocery_list_main"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMcf_BS1iH0tB26o6A-ZXRHRH99R5Q5Co"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
