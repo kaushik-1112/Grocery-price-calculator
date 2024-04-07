@@ -1,16 +1,1 @@
-# Flutter-hive-grocery-list
-
-This file is to demonstrate the use of basic Hive (NoSQL) in Flutter. A simple Grocery List Application was created for demonstrating the use of Hive package. Have Fun!!
-
-Hive (NoSQL) [https://pub.dev/packages/hive] <br/>
-Hive Flutter [https://pub.dev/packages/hive_flutter]<br/>
-Hive Official Docs [https://docs.hivedb.dev/]<br/>
-
-To see more details, please visit my youtube channel link below.
-
-Follow @
-
-1. Instagram - codelx21 (TechnoLX21)
-2. Twitter - @LxTechno
-3. Github - https://github.com/TechnoLX
-4. Youtube - https://youtu.be/NEt_-Ebou2M
+The Grocery Price Calculator application is a convenient tool designed in flutter to simplify the management of grocery lists and calculate the total price of items. The application effectively integrates Hive for NoSQL database operations and Shared Preferences for seamless data transfer between pages. By leveraging these technologies, the application ensures efficient management of grocery lists and accurate price calculations while providing a user-friendly experience. This combination of Hive and Shared Preferences contributes to the reliability, speed, and functionality of the application, making it a valuable tool for users to streamline their grocery shopping experience.
