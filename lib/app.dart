@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_video/hivecode.dart';
 import 'package:flutter_video/FinalPage.dart';
 
@@ -12,11 +13,23 @@ class Demo extends StatefulWidget {
 
 class _DemoState extends State<Demo> {
   List<Map<String, dynamic>> _groceryItem = [];
+  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  double? budget; // Change to nullable double to handle user input
 
   @override
   void initState() {
     super.initState();
     _loadGroceryItems();
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    _initializeNotifications();
+  }
+
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
   Future<void> _loadGroceryItems() async {
@@ -25,9 +38,10 @@ class _DemoState extends State<Demo> {
     });
   }
 
+  final _budgetController = TextEditingController(); // Controller for budget input field
   final _itemController = TextEditingController();
   final _quantityController = TextEditingController();
-  final _priceController = TextEditingController(); // Added price controller
+  final _priceController = TextEditingController();
   final _dateController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
 
@@ -35,17 +49,16 @@ class _DemoState extends State<Demo> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  title: Text(
-    'Grocery Shopping Calculator',
-    style: TextStyle(
-      fontSize: 20, // Adjust the font size
-      fontWeight: FontWeight.bold, // Apply bold font weight
-    ),
-  ),
-  elevation: 4, // Add elevation to give it a material look
-  backgroundColor: Colors.pink, // Customize the background color
-),
-
+        title: Text(
+          'Grocery Shopping Calculator',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevation: 4,
+        backgroundColor: Colors.pink,
+      ),
       body: _groceryItem.isEmpty
           ? Center(
               child: Text(
@@ -68,7 +81,7 @@ class _DemoState extends State<Demo> {
                             children: [
                               Text(_item['item']),
                               Text(
-                                'Rs.${_item['price']}', // Displaying price
+                                'Rs.${_item['price']}',
                                 style: TextStyle(color: Colors.green),
                               ),
                             ],
@@ -91,32 +104,41 @@ class _DemoState extends State<Demo> {
               },
             ),
       floatingActionButton: Column(
-  mainAxisAlignment: MainAxisAlignment.center, // Center the "Add" button vertically
-  crossAxisAlignment: CrossAxisAlignment.end, // Align the buttons to the end horizontally
-  children: [
-    Expanded(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: FloatingActionButton.extended(
-          onPressed: () => _groceryModel(context, null),
-          icon: Icon(Icons.add),
-          label: Text('Add Item'),
-          tooltip: 'Add a new grocery item',
-          backgroundColor: Colors.green, // Customize background color
-        ),
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: FloatingActionButton.extended(
+                onPressed: () => _groceryModel(context, null),
+                icon: Icon(Icons.add),
+                label: Text('Add Item'),
+                tooltip: 'Add a new grocery item',
+                backgroundColor: Colors.green,
+              ),
+            ),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              _showBudgetDialog(context); // Show budget input dialog
+            },
+            child: Text('Set Budget'),
+            style: ElevatedButton.styleFrom(
+              elevation: 4,
+            ),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _saveGroceryList,
+            child: Text('View Final List'),
+            style: ElevatedButton.styleFrom(
+              elevation: 4,
+            ),
+          ),
+        ],
       ),
-    ),
-    SizedBox(height: 16),
-    ElevatedButton(
-      onPressed: _saveGroceryList,
-      child: Text('View Final List'),
-      style: ElevatedButton.styleFrom(
-        elevation: 4, // Adjust elevation as needed
-      ),
-    ),
-  ],
-),
-
     );
   }
 
@@ -132,7 +154,23 @@ class _DemoState extends State<Demo> {
       ),
     );
 
-    // Navigate to FinalPage with the grocery list
+    double totalPrice = _groceryItem.fold(0, (total, item) => total + (item['price']*item['quantity']));
+
+    String message = 'Final price is: Rs.$totalPrice';
+
+    _showNotification(message);
+
+    if (budget != null) {
+      if (totalPrice > budget!) {
+        _showNotification('Your final price exceeds your wallet. No sufficient money.');
+      } else {
+        double remainingAmount = budget! - totalPrice;
+        _showNotification('List created. Here\'s your remaining in wallet: Rs.$remainingAmount');
+      }
+    } else {
+      _showNotification('Budget not set. Please set your budget.');
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -141,12 +179,27 @@ class _DemoState extends State<Demo> {
     );
   }
 
+  void _showNotification(String message) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails('your channel id', 'your channel name', 'your channel description',
+            importance: Importance.max, priority: Priority.high, ticker: 'ticker');
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Grocery List',
+      message,
+      platformChannelSpecifics,
+      payload: 'item x',
+    );
+  }
+
   void _groceryModel(BuildContext context, int? key) {
     if (key != null) {
       final _currentItem = _groceryItem.firstWhere((item) => item['key'] == key);
       _itemController.text = _currentItem['item'];
       _quantityController.text = _currentItem['quantity'].toString();
-      _priceController.text = _currentItem['price'].toStringAsFixed(2); // Assuming price is stored as a double
+      _priceController.text = _currentItem['price'].toStringAsFixed(2);
       _dateController.text = _currentItem['date'];
     } else {
       _itemController.clear();
@@ -179,14 +232,14 @@ class _DemoState extends State<Demo> {
                 if (key == null) {
                   HiveHelper.addItem({
                     'item': _itemController.text,
-                    'quantity': int.parse(_quantityController.text), // Parse quantity as integer
+                    'quantity': int.parse(_quantityController.text),
                     'price': price,
                     'date': _selectedDate.toString().split(' ')[0],
                   });
                 } else {
                   HiveHelper.updateItem(key, {
                     'item': _itemController.text,
-                    'quantity': int.parse(_quantityController.text), // Parse quantity as integer
+                    'quantity': int.parse(_quantityController.text),
                     'price': price,
                     'date': _selectedDate.toString().split(' ')[0],
                   });
@@ -222,7 +275,7 @@ class _DemoState extends State<Demo> {
   Widget _buildQuantityField(TextEditingController _controller, String hint) {
     return TextField(
       controller: _controller,
-      keyboardType: TextInputType.number, // Set input type to number
+      keyboardType: TextInputType.number,
       decoration: InputDecoration(
         hintText: hint,
         labelText: hint,
@@ -255,6 +308,36 @@ class _DemoState extends State<Demo> {
         ),
       ),
       readOnly: true,
+    );
+  }
+
+  void _showBudgetDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Set Budget'),
+          content: TextFormField(
+            controller: _budgetController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'Enter your budget',
+              labelText: 'Budget',
+            ),
+          ),
+          actions: <Widget>[
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  budget = double.tryParse(_budgetController.text);
+                });
+                Navigator.of(context).pop();
+              },
+              child: Text('Set'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
